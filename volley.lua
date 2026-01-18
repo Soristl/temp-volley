@@ -1235,16 +1235,19 @@ local admins =
 local permanentAdmins = 
 {
   "Refletz#6472",
-  "Soristl1#0000",
   "+Mimounaaa#0000",
-  "Axeldoton#0000",
-  "Nagi#6356",
-  "Wreft#5240",
   "Lylastyla#0000",
   "Ppoppohaejuseyo#2315",
-  "Rowed#4415",
-  "Tanarchosl#4785",
   "Sadzia#0000"
+}
+
+local inactivePermanentAdmins = {
+  "Soristl1#0000",
+  "Nagi#6356",
+  "Wreft#5240",
+  "Tanarchosl#4785",
+  "Axeldoton#0000",
+  "Rowed#4415"
 }
 
 local trad = ""
@@ -1529,16 +1532,28 @@ function eventChatCommand(name, c)
       playerLanguage[name].tr = lang.pl
     end
   elseif command == "admins" then
-    local str = ""
-    for name, data in pairs(admins) do
-      if name ~= "Refletz#6472" and name ~= "Soristl1#0000" then
-        if admins[name] then
-          str = ""..str.." "..name..""
-        end
+    local pAdminsList = ""
+    local adminsList = ""
+    local inactiveAdminsList = ""
+    for name1, data in pairs(admins) do
+      local isPermanentAdminList = isPermanentAdmin(name1)
+      local isInactiveAdminList = isInactivePermanentAdmin(name1)
+
+      if isPermanentAdminList then
+        pAdminsList = ""..pAdminsList.." "..name1..""
+      end
+
+      if isInactiveAdminList then
+        inactiveAdminsList = ""..inactiveAdminsList.." "..name1..""
+      end
+
+      if admins[name1] then
+        adminsList = ""..adminsList.." "..name1..""
       end
     end
-    tfm.exec.chatMessage("<bv>Admins: "..str.."<n>", name)
-    print(str)
+    tfm.exec.chatMessage("<j>Permanent Admins:"..pAdminsList.."<n>", name)
+    tfm.exec.chatMessage("<bv>Admins:"..adminsList.."<n>", name)
+    tfm.exec.chatMessage("Inactive Permanent Admins:"..inactiveAdminsList.."<n>", name)
   elseif command == "maps" then
     local str = "<bv>Volley maps"
     if gameStats.twoTeamsMode then
@@ -2220,6 +2235,20 @@ function eventChatCommand(name, c)
               selectMapUI(name1)
             end
           end
+        end
+      end
+    elseif command:sub(1, 6) == "padmin" then
+      local permanentAdmin = isPermanentAdmin(name)
+
+      local args = split(command)
+
+      if permanentAdmin then
+        return
+      end
+
+      for i = 1, #inactivePermanentAdmins do
+        if name == inactivePermanentAdmins[i] then
+          permanentAdmins[#permanentAdmins + 1] = name
         end
       end
     elseif command:sub(1, 4) == "kick" then
@@ -3248,6 +3277,63 @@ function eventLoop(elapsedTime, remainingTime)
   timersLoop()
 end
 
+
+
+--[[ src/events/eventNewGame.lua ]]--
+
+function eventNewGame()
+  if mode == "gameStart" then
+    if gameStats.teamsMode or gameStats.twoTeamsMode then
+      if gameStats.isCustomMap then
+        ui.setMapName("<j>"..customMapsFourTeamsMode[gameStats.customMapIndex][4].."<n>")
+
+        return
+      end
+
+      if gameStats.totalVotes >= 2 then
+        ui.setMapName("<j>"..customMapsFourTeamsMode[gameStats.mapIndexSelected][4].."<n>")
+
+        return
+      end
+
+      ui.setMapName("<j>Refletz#6472<n>")
+
+      return
+    end
+
+    if gameStats.threeTeamsMode then
+      if gameStats.isCustomMap then
+        ui.setMapName("<j>"..customMapsThreeTeamsMode[gameStats.customMapIndex][4].."<n>")
+
+        return
+      end
+
+      if gameStats.totalVotes >= 2 then
+        ui.setMapName("<j>"..customMapsThreeTeamsMode[gameStats.mapIndexSelected][4].."<n>")
+
+        return
+      end
+
+      ui.setMapName("<j>Refletz#6472<n>")
+
+      return
+    end
+
+    if gameStats.isCustomMap then
+      ui.setMapName("<j>"..customMaps[gameStats.customMapIndex][4].."<n>")
+
+      return
+    end
+
+    if gameStats.totalVotes >= 2 then
+      ui.setMapName("<j>"..customMaps[gameStats.mapIndexSelected][4].."<n>")
+
+      return
+    end
+
+    ui.setMapName("<j>Refletz#6472<n>")
+  end
+end
 
 
 --[[ src/events/eventNewPlayer.lua ]]--
@@ -8985,6 +9071,20 @@ function getTeamName(text)
   elseif string.sub(text, 1, 9) == "<vp>Green" then
     return "Green"
   end
+end
+
+
+--[[ src/functions/utils/isInactivePermanentAdmin.lua ]]--
+
+function isInactivePermanentAdmin(name)
+  for i = 1, #inactivePermanentAdmins do
+    local admin = inactivePermanentAdmins[i]
+    if name == admin then
+      return true
+    end
+  end
+
+  return false
 end
 
 
